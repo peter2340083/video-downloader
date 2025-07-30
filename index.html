@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>影片下載前端</title>
+  </head>
+  <body>
+    <h2>貼上影片網址：</h2>
+    <input id="url" type="text" placeholder="https://www.youtube.com/watch?v=..." size="60" />
+    <br /><br />
+    <button onclick="startDownload('video')">下載影片</button>
+    <button onclick="startDownload('audio')">下載音訊</button>
+
+    <div id="result" style="
+      white-space: pre-wrap;
+      font-family: monospace;
+      padding: 10px;
+      border: 1px solid #ccc;
+      background: #f8f8f8;
+      margin-top: 20px;
+      width: 1000px;
+      height: 200px;
+      overflow-y: auto;
+    ">
+      等待下載中...
+    </div>
+
+    <script>
+      function startDownload(type) {
+        const url = document.getElementById("url").value.trim();
+        const resultDiv = document.getElementById("result");
+        resultDiv.textContent = "開始下載...\n";
+
+        if (!url) {
+          resultDiv.textContent = "請輸入網址";
+          return;
+        }
+
+        // 開啟 SSE 接收下載進度
+        const evtSource = new EventSource(`http://localhost:5000/progress?url=${encodeURIComponent(url)}&type=${type}`);
+
+        evtSource.onmessage = function(event) {
+          resultDiv.textContent += event.data + "\n";
+          resultDiv.scrollTop = resultDiv.scrollHeight;
+        };
+
+        evtSource.onerror = function() {
+          resultDiv.textContent += "\n[下載完成或連線中斷]\n開始準備下載檔案...";
+          evtSource.close();
+
+          // 下載完成，觸發下載連結
+          const formData = new FormData();
+          formData.append('url', url);
+          formData.append('type', type);
+
+          fetch('http://localhost:5000/download', {
+            method: 'POST',
+            body: formData
+          })
+          .then(response => {
+            if (!response.ok) throw new Error('下載檔案失敗');
+
+            const disposition = response.headers.get('Content-Disposition');
+            let filename = '';
+            if (disposition) {
+                const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                const matches = filenameRegex.exec(disposition);
+                if (matches != null && matches[1]) {
+                filename = matches[1].replace(/['"]/g, '');
+                }
+            }
+            return response.blob().then(blob => ({ filename, blob }));
+          })
+          .then(({ filename, blob }) => {
+            const a = document.createElement('a');
+            const urlBlob = window.URL.createObjectURL(blob);
+            a.href = urlBlob;
+            a.download = filename || 'download'; // 設定下載檔名，沒讀到就給預設名
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(urlBlob);
+            resultDiv.textContent += "\n檔案下載完成";
+          })
+          .catch(err => {
+            resultDiv.textContent += "\n錯誤: " + err.message;
+          });
+
+        };
+      }
+    </script>
+  </body>
+</html>
