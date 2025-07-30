@@ -37,7 +37,7 @@
         }
 
         // 開啟 SSE 接收下載進度
-        const evtSource = new EventSource(`http://localhost:5000/progress?url=${encodeURIComponent(url)}&type=${type}`);
+        const evtSource = new EventSource(`https://video-downloader-api-s7gb.onrender.com/progress?url=${encodeURIComponent(url)}&type=${type}`);
 
         evtSource.onmessage = function(event) {
           resultDiv.textContent += event.data + "\n";
@@ -53,7 +53,7 @@
           formData.append('url', url);
           formData.append('type', type);
 
-          fetch('http://localhost:5000/download', {
+          fetch('https://video-downloader-api-s7gb.onrender.com/download', {
             method: 'POST',
             body: formData
           })
