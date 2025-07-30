@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-    <title>影片下載前端</title>
+    <title>影片下載</title>
   </head>
   <body>
     <h2>貼上影片網址：</h2>
@@ -45,7 +45,7 @@
         };
 
         evtSource.onerror = function() {
-          resultDiv.textContent += "\n[下載完成或連線中斷]\n開始準備下載檔案...";
+          resultDiv.textContent += "\n[處理完成]\n開始準備下載檔案...";
           evtSource.close();
 
           // 下載完成，觸發下載連結
